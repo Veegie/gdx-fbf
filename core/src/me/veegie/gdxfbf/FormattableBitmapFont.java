@@ -1,7 +1,10 @@
 package me.veegie.gdxfbf;
 
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -18,50 +21,96 @@ public class FormattableBitmapFont
     /**
      * The default character to use for the opening bracket in tags.
      */
-    private static final char TAG_LEFT_BRACKET_DEFAULT  = '<';
+    private static final String TAG_LEFT_BRACKET_DEFAULT  = "<";
     /**
      * The default character to use for the closing bracket in tags.
      */
-    private static final char TAG_RIGHT_BRACKET_DEFAULT = '>';
+    private static final String TAG_RIGHT_BRACKET_DEFAULT = ">";
     /**
      * The default character to use to signify a closing tag.
      */
-    private static final char TAG_CLOSE_DEFAULT         = '/';
+    private static final String TAG_CLOSE_DEFAULT         = "/";
+
+    private BitmapFont baseFont;
 
     Map<String, BitmapFont> fonts;
 
-    char tagLeftBracket;
-    char tagRightBracket;
-    char tagClose;
+    String tagLeftBracket;
+    String tagRightBracket;
+    String tagClose;
 
     /**
      * Creates a new FormattableBitmapFont using the specified tag-font pairs and the default
      * bracket and tag close characters.
      *
+     * @param baseFont     the BitmapFont upon which the formatted fonts are based
      * @param tagFontPairs any number of tag-font pairs to be used in this formattable font.
      */
-    public FormattableBitmapFont(TagFontPair... tagFontPairs)
+    public FormattableBitmapFont(BitmapFont baseFont, TagFontPair... tagFontPairs)
     {
-        this(TAG_LEFT_BRACKET_DEFAULT, TAG_RIGHT_BRACKET_DEFAULT, TAG_CLOSE_DEFAULT, Arrays
-                .asList(tagFontPairs));
+        this(TAG_LEFT_BRACKET_DEFAULT, TAG_RIGHT_BRACKET_DEFAULT, TAG_CLOSE_DEFAULT, baseFont,
+             Arrays.asList(tagFontPairs));
     }
 
-    public FormattableBitmapFont(char tagLeftBracket, char tagRightBracket, char tagClose,
-                                 TagFontPair... tagFontPairs)
+    /**
+     * Creates a new FormattableBitmapFont using the specified tag-font pairs and the specified
+     * characters for tag brackets and closing tags.
+     *
+     * @param tagLeftBracket  the character to use as the left-bracket in tags
+     * @param tagRightBracket the character to use as the right bracket in tags
+     * @param tagClose        the character to use to signify that a tag is a closing tag
+     * @param baseFont        the BitmapFont upon which the formatted fonts are based
+     * @param tagFontPairs    any number of tag-font pairs to be used in this formattable font
+     */
+    public FormattableBitmapFont(String tagLeftBracket, String tagRightBracket, String tagClose,
+                                 BitmapFont baseFont, TagFontPair... tagFontPairs)
     {
-        this(tagLeftBracket, tagRightBracket, tagClose, Arrays.asList(tagFontPairs));
+        this(tagLeftBracket, tagRightBracket, tagClose, baseFont, Arrays.asList(tagFontPairs));
     }
 
-    public FormattableBitmapFont(char tagLeftBracket, char tagRightBracket, char tagClose,
-                                 List<TagFontPair> tagFontPairs)
+    /**
+     * Creates a new FormattableBitmapFont using the specified tag-font pairs and the specified
+     * characters for tag brackets and closing tags.
+     *
+     * @param tagLeftBracket  the character to use as the left-bracket in tags
+     * @param tagRightBracket the character to use as the right bracket in tags
+     * @param tagClose        the character to use to signify that a tag is a closing tag
+     * @param baseFont        the BitmapFont upon which the formatted fonts are based
+     * @param tagFontPairs    a list of tag-font pairs to be used in this formattable font
+     */
+    public FormattableBitmapFont(String tagLeftBracket, String tagRightBracket, String tagClose,
+                                 BitmapFont baseFont, List<TagFontPair> tagFontPairs)
     {
         this.tagLeftBracket = tagLeftBracket;
         this.tagRightBracket = tagRightBracket;
         this.tagClose = tagClose;
+        this.baseFont = baseFont;
         fonts = new HashMap<String, BitmapFont>(tagFontPairs.size());
         for (TagFontPair pair : tagFontPairs)
         {
             fonts.put(pair.getTag(), pair.getFont());
         }
+    }
+
+    public GlyphLayout draw(SpriteBatch batch, String seq, float x, float y)
+    {
+        GlyphLayout layout;
+        if (!seq.contains(tagLeftBracket) || !seq.contains(tagRightBracket) ||
+            !seq.contains(tagClose))
+        {
+            // Text does not appear to contain any tags. Simply draw directly.
+             layout = baseFont.draw(batch, seq, x, y);
+        }
+        else
+        {
+            layout = baseFont.draw(batch, seq, x, y);
+        }
+        return layout;
+    }
+
+    private List<TagFontPair> formatText(CharSequence seq)
+    {
+        List<TagFontPair> formattedTextSegments = new ArrayList<TagFontPair>();
+        return formattedTextSegments;
     }
 }
