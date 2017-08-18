@@ -1,7 +1,9 @@
 package me.veegie.gdxfbf;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout.GlyphRun;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import java.text.CharacterIterator;
@@ -72,7 +74,7 @@ public class FormattableBitmapFont
      * @param baseFont     the BitmapFont upon which the formatted fonts are based
      * @param tagFontPairs any number of tag-font pairs to be used in this formattable font.
      */
-    public FormattableBitmapFont(BitmapFont baseFont, TagFontPair... tagFontPairs)
+    public FormattableBitmapFont(BitmapFont baseFont, StringFontPair... tagFontPairs)
     {
         this(TAG_LEFT_BRACKET_DEFAULT, TAG_RIGHT_BRACKET_DEFAULT, TAG_CLOSE_DEFAULT, baseFont,
              Arrays.asList(tagFontPairs));
@@ -89,7 +91,7 @@ public class FormattableBitmapFont
      * @param tagFontPairs    any number of tag-font pairs to be used in this formattable font
      */
     public FormattableBitmapFont(String tagLeftBracket, String tagRightBracket, String tagClose,
-                                 BitmapFont baseFont, TagFontPair... tagFontPairs)
+                                 BitmapFont baseFont, StringFontPair... tagFontPairs)
     {
         this(tagLeftBracket, tagRightBracket, tagClose, baseFont, Arrays.asList(tagFontPairs));
     }
@@ -105,7 +107,7 @@ public class FormattableBitmapFont
      * @param tagFontPairs    a list of tag-font pairs to be used in this formattable font
      */
     public FormattableBitmapFont(String tagLeftBracket, String tagRightBracket, String tagClose,
-                                 BitmapFont baseFont, List<TagFontPair> tagFontPairs)
+                                 BitmapFont baseFont, List<StringFontPair> tagFontPairs)
     {
         this.tagLeftBracket = escapeRegex(tagLeftBracket);
         this.tagRightBracket = escapeRegex(tagRightBracket);
@@ -120,9 +122,9 @@ public class FormattableBitmapFont
         sb.append('(');
         for (int i = 0; i < tagFontPairs.size(); i++)
         {
-            TagFontPair pair = tagFontPairs.get(i);
-            fonts.put(pair.getTag(), pair.getFont());
-            sb.append(pair.getTag());
+            StringFontPair pair = tagFontPairs.get(i);
+            fonts.put(pair.getString(), pair.getFont());
+            sb.append(pair.getString());
             if (i + 1 < tagFontPairs.size())
             {
                 sb.append('|');
@@ -134,25 +136,72 @@ public class FormattableBitmapFont
                     this.tagLeftBracket + this.tagClose + "\1" + this.tagRightBracket + ".*";
     }
 
-    public GlyphLayout draw(SpriteBatch batch, String str, float x, float y)
+    public List<GlyphLayout> draw(SpriteBatch batch, String str, float x, float y)
     {
-        GlyphLayout layout;
+        List<GlyphLayout> layouts = new ArrayList<GlyphLayout>();
         if (!str.matches(tagsRegex))
         {
             // Text does not appear to contain any complete tags. Simply draw directly.
-            layout = baseFont.draw(batch, str, x, y);
+            layouts.add(baseFont.draw(batch, str, x, y));
         }
         else
         {
-            layout = baseFont.draw(batch, str, x, y);
+            List<StringFontPair> formattedText = formatText(str);
+            GlyphLayout          layout;
+            float                curX          = x;
+            float                curY          = y;
+            for (StringFontPair pair : formattedText)
+            {
+                // Draw fragments using the correct font at the correct position, one after another.
+                layout = pair.getFont().draw(batch, pair.getString(), curX, curY);
+                GlyphRun lastRun = layout.runs.get(layout.runs.size - 1);
+                curX = lastRun.x + lastRun.width;
+                curY = lastRun.y;
+                layouts.add(layout);
+            }
         }
-        return layout;
+        return layouts;
     }
 
-    private List<TagFontPair> formatText(String str)
+    private List<StringFontPair> formatText(String str)
     {
-        String[]          fragments             = str.split(tagLeftBracket);
-        List<TagFontPair> formattedTextSegments = new ArrayList<TagFontPair>();
+        String[]             fragments             = str.split(tagLeftBracket);
+        List<StringFontPair> formattedTextSegments = new ArrayList<StringFontPair>();
+        for (String s : fragments)
+        {
+            int rBracketIndex = s.indexOf(tagRightBracket);
+            if (rBracketIndex == -1)
+            {
+                // The first fragment of a formatted text block will not have a right-bracket
+                // character unless the text block begins with a tag. Simply use the base font if
+                // no tag is present.
+                formattedTextSegments.add(new StringFontPair(s, baseFont));
+            }
+            else
+            {
+                String     tag  = s.substring(0, rBracketIndex);
+                String     text = s.substring(rBracketIndex + tagRightBracket.length());
+                BitmapFont font;
+                if (tag.startsWith(tagClose))
+                {
+                    font = baseFont;
+                }
+                else
+                {
+                    font = fonts.get(tag);
+                    if (font == null)
+                    {
+                        // This code snippet-esque library doesn't really need to fail
+                        // spectacularly on user errors, so if an invalid tag is entered, just
+                        // render it using the base font and log a warning message.
+                        Gdx.app.log("WARNING", "gdx-fbf: Invalid or undefined font tag \"" + tag +
+                                               "\" in input string.");
+                        font = baseFont;
+                    }
+                }
+                formattedTextSegments.add(new StringFontPair(text, font));
+            }
+        }
         return formattedTextSegments;
     }
 
