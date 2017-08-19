@@ -124,7 +124,7 @@ public class FormattableBitmapFont
         {
             StringFontPair pair = tagFontPairs.get(i);
             fonts.put(pair.getString(), pair.getFont());
-            sb.append(pair.getString());
+            sb.append(escapeRegex(pair.getString()));
             if (i + 1 < tagFontPairs.size())
             {
                 sb.append('|');
@@ -133,7 +133,7 @@ public class FormattableBitmapFont
         sb.append(')');
 
         tagsRegex = ".*" + this.tagLeftBracket + sb.toString() + this.tagRightBracket + ".*" +
-                    this.tagLeftBracket + this.tagClose + "\1" + this.tagRightBracket + ".*";
+                    this.tagLeftBracket + this.tagClose + "\\1" + this.tagRightBracket + ".*";
     }
 
     public List<GlyphLayout> draw(SpriteBatch batch, String str, float x, float y)
@@ -155,8 +155,12 @@ public class FormattableBitmapFont
                 // Draw fragments using the correct font at the correct position, one after another.
                 layout = pair.getFont().draw(batch, pair.getString(), curX, curY);
                 GlyphRun lastRun = layout.runs.get(layout.runs.size - 1);
-                curX = lastRun.x + lastRun.width;
-                curY = lastRun.y;
+                curX += lastRun.width;
+                // Only update y position if text wrapped.
+                if (layout.runs.size > 1)
+                {
+                    curY += layout.height / layout.runs.size;
+                }
                 layouts.add(layout);
             }
         }
