@@ -132,8 +132,10 @@ public class FormattableBitmapFont
         }
         sb.append(')');
 
-        tagsRegex = ".*" + this.tagLeftBracket + sb.toString() + this.tagRightBracket + ".*" +
-                    this.tagLeftBracket + this.tagClose + "\\1" + this.tagRightBracket + ".*";
+        tagsRegex = ".*" + escapeRegexChar(this.tagLeftBracket) + sb.toString() +
+                    escapeRegexChar(this.tagRightBracket) + ".*" +
+                    escapeRegexChar(this.tagLeftBracket) + escapeRegexChar(this.tagClose) + "\\1" +
+                    escapeRegexChar(this.tagRightBracket) + ".*";
     }
 
     public List<GlyphLayout> draw(SpriteBatch batch, String str, float x, float y)
