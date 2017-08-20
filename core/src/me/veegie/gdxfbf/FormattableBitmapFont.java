@@ -26,15 +26,15 @@ public class FormattableBitmapFont
     /**
      * The default character to use for the opening bracket in tags.
      */
-    private static final String TAG_LEFT_BRACKET_DEFAULT  = "<";
+    private static final char TAG_LEFT_BRACKET_DEFAULT  = '<';
     /**
      * The default character to use for the closing bracket in tags.
      */
-    private static final String TAG_RIGHT_BRACKET_DEFAULT = ">";
+    private static final char TAG_RIGHT_BRACKET_DEFAULT = '>';
     /**
      * The default character to use to signify a closing tag.
      */
-    private static final String TAG_CLOSE_DEFAULT         = "/";
+    private static final char TAG_CLOSE_DEFAULT         = '/';
 
     /**
      * The BitmapFont upon which the formatted fonts are based on.
@@ -42,19 +42,19 @@ public class FormattableBitmapFont
     private BitmapFont baseFont;
 
     /**
-     * The character or string used to denote the left bracket in a tag.
+     * The character used to denote the left bracket in a tag.
      */
-    private String tagLeftBracket;
+    private char tagLeftBracket;
 
     /**
-     * The character or string used to denote the right bracket in a tag.
+     * The character used to denote the right bracket in a tag.
      */
-    private String tagRightBracket;
+    private char tagRightBracket;
 
     /**
-     * The character or string used to indicate that a tag is a closing tag.
+     * The character used to indicate that a tag is a closing tag.
      */
-    private String tagClose;
+    private char tagClose;
 
     /**
      * A map allowing access to each formatted BitmapFont, with tag names as keys.
@@ -90,7 +90,7 @@ public class FormattableBitmapFont
      * @param baseFont        the BitmapFont upon which the formatted fonts are based
      * @param tagFontPairs    any number of tag-font pairs to be used in this formattable font
      */
-    public FormattableBitmapFont(String tagLeftBracket, String tagRightBracket, String tagClose,
+    public FormattableBitmapFont(char tagLeftBracket, char tagRightBracket, char tagClose,
                                  BitmapFont baseFont, StringFontPair... tagFontPairs)
     {
         this(tagLeftBracket, tagRightBracket, tagClose, baseFont, Arrays.asList(tagFontPairs));
@@ -106,19 +106,19 @@ public class FormattableBitmapFont
      * @param baseFont        the BitmapFont upon which the formatted fonts are based
      * @param tagFontPairs    a list of tag-font pairs to be used in this formattable font
      */
-    public FormattableBitmapFont(String tagLeftBracket, String tagRightBracket, String tagClose,
+    public FormattableBitmapFont(char tagLeftBracket, char tagRightBracket, char tagClose,
                                  BitmapFont baseFont, List<StringFontPair> tagFontPairs)
     {
-        this.tagLeftBracket = escapeRegex(tagLeftBracket);
-        this.tagRightBracket = escapeRegex(tagRightBracket);
-        this.tagClose = escapeRegex(tagClose);
+        this.tagLeftBracket = tagLeftBracket;
+        this.tagRightBracket = tagRightBracket;
+        this.tagClose = tagClose;
         this.baseFont = baseFont;
         fonts = new HashMap<String, BitmapFont>(tagFontPairs.size());
 
         // We need to search only for valid tags when determining if a string needs to be drawn
         // as a formatted string. Construct a regex to quickly search strings for all supplied
         // tags while we also populate the tag-to-BitmapFont map.
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(tagFontPairs.size() * 4 + 2);
         sb.append('(');
         for (int i = 0; i < tagFontPairs.size(); i++)
         {
@@ -169,7 +169,7 @@ public class FormattableBitmapFont
 
     private List<StringFontPair> formatText(String str)
     {
-        String[]             fragments             = str.split(tagLeftBracket);
+        String[]             fragments             = str.split(escapeRegexChar(tagLeftBracket));
         List<StringFontPair> formattedTextSegments = new ArrayList<StringFontPair>();
         for (String s : fragments)
         {
@@ -183,10 +183,12 @@ public class FormattableBitmapFont
             }
             else
             {
-                String     tag  = s.substring(0, rBracketIndex);
-                String     text = s.substring(rBracketIndex + tagRightBracket.length());
+                String tag = s.substring(0, rBracketIndex);
+                String text =
+                        rBracketIndex + 1 == s.length() ? s.substring(rBracketIndex) : s.substring(
+                                rBracketIndex + 1);
                 BitmapFont font;
-                if (tag.startsWith(tagClose))
+                if (tag.startsWith(String.valueOf(tagClose)))
                 {
                     font = baseFont;
                 }
@@ -224,59 +226,73 @@ public class FormattableBitmapFont
 
         while (chr != CharacterIterator.DONE)
         {
-            switch (chr)
-            {
-                case '.':
-                    res.append("\\.");
-                    break;
-                case '\\':
-                    res.append("\\\\");
-                    break;
-                case '?':
-                    res.append("\\?");
-                    break;
-                case '*':
-                    res.append("\\*");
-                    break;
-                case '+':
-                    res.append("\\+");
-                    break;
-                case '&':
-                    res.append("\\&");
-                    break;
-                case ':':
-                    res.append("\\:");
-                    break;
-                case '{':
-                    res.append("\\{");
-                    break;
-                case '}':
-                    res.append("\\}");
-                    break;
-                case '[':
-                    res.append("\\[");
-                    break;
-                case ']':
-                    res.append("\\]");
-                    break;
-                case '(':
-                    res.append("\\(");
-                    break;
-                case ')':
-                    res.append("\\)");
-                    break;
-                case '^':
-                    res.append("\\^");
-                    break;
-                case '$':
-                    res.append("\\$");
-                    break;
-                default:
-                    res.append(chr);
-                    break;
-            }
+            res.append(escapeRegexChar(chr));
             chr = iterator.next();
         }
         return res.toString();
+    }
+
+    /**
+     * Helper method to handle cases where the user has specified characters that require
+     * escaping when used in a regular expression.
+     *
+     * @param c the character to escape
+     * @return a properly-escaped version of the input character as a string for regex operations
+     */
+    private static String escapeRegexChar(char c)
+    {
+        String result;
+        switch (c)
+        {
+            case '.':
+                result = "\\.";
+                break;
+            case '\\':
+                result = "\\\\";
+                break;
+            case '?':
+                result = "\\?";
+                break;
+            case '*':
+                result = "\\*";
+                break;
+            case '+':
+                result = "\\+";
+                break;
+            case '&':
+                result = "\\&";
+                break;
+            case ':':
+                result = "\\:";
+                break;
+            case '{':
+                result = "\\{";
+                break;
+            case '}':
+                result = "\\}";
+                break;
+            case '[':
+                result = "\\[";
+                break;
+            case ']':
+                result = "\\]";
+                break;
+            case '(':
+                result = "\\(";
+                break;
+            case ')':
+                result = "\\)";
+                break;
+            case '^':
+                result = "\\^";
+                break;
+            case '$':
+                result = "\\$";
+                break;
+            default:
+                result = String.valueOf(c);
+                break;
+        }
+        return result;
     }
 }
