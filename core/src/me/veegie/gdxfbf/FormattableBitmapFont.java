@@ -241,58 +241,40 @@ public class FormattableBitmapFont
      */
     private static String escapeRegexChar(char c)
     {
-        String result;
         switch (c)
         {
             case '.':
-                result = "\\.";
-                break;
+                return "\\.";
             case '\\':
-                result = "\\\\";
-                break;
+                return "\\\\";
             case '?':
-                result = "\\?";
-                break;
+                return "\\?";
             case '*':
-                result = "\\*";
-                break;
+                return "\\*";
             case '+':
-                result = "\\+";
-                break;
+                return "\\+";
             case '&':
-                result = "\\&";
-                break;
+                return "\\&";
             case ':':
-                result = "\\:";
-                break;
+                return "\\:";
             case '{':
-                result = "\\{";
-                break;
+                return "\\{";
             case '}':
-                result = "\\}";
-                break;
+                return "\\}";
             case '[':
-                result = "\\[";
-                break;
+                return "\\[";
             case ']':
-                result = "\\]";
-                break;
+                return "\\]";
             case '(':
-                result = "\\(";
-                break;
+                return "\\(";
             case ')':
-                result = "\\)";
-                break;
+                return "\\)";
             case '^':
-                result = "\\^";
-                break;
+                return "\\^";
             case '$':
-                result = "\\$";
-                break;
+                return "\\$";
             default:
-                result = String.valueOf(c);
-                break;
+                return String.valueOf(c);
         }
-        return result;
     }
 }
