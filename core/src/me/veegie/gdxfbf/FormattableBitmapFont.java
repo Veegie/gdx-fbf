@@ -154,6 +154,21 @@ public class FormattableBitmapFont
             float                curY          = y;
             for (StringFontPair pair : formattedText)
             {
+                // If the string contains newline characters, we will have to do the line break
+                // manually as a further series of draw calls.
+                if (pair.getString().contains("\n"))
+                {
+                    String[] segmentedPart = pair.getString().split("\n");
+                    for (String s : segmentedPart)
+                    {
+                        if(!s.isEmpty())
+                        {
+                            pair.getFont().draw(batch, s, curX, curY);
+                        }
+                        curX = x;
+                        curY += pair.getFont().getData().down;
+                    }
+                }
                 // Draw fragments using the correct font at the correct position, one after another.
                 layout = pair.getFont().draw(batch, pair.getString(), curX, curY);
                 GlyphRun lastRun = layout.runs.get(layout.runs.size - 1);
@@ -161,7 +176,7 @@ public class FormattableBitmapFont
                 // Only update y position if text wrapped.
                 if (layout.runs.size > 1)
                 {
-                    curY += layout.height / layout.runs.size;
+                    curY += pair.getFont().getData().down;
                 }
                 layouts.add(layout);
             }
