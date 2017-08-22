@@ -161,6 +161,7 @@ public class FormattableBitmapFont
                     String[] segmentedPart = pair.getString().split("\n");
                     for (int i = 0; i < segmentedPart.length; i++)
                     {
+                        String s = segmentedPart[i];
                         if (!s.isEmpty())
                         {
                             pair.getFont().draw(batch, s, curX, curY);
