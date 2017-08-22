@@ -159,14 +159,17 @@ public class FormattableBitmapFont
                 if (pair.getString().contains("\n"))
                 {
                     String[] segmentedPart = pair.getString().split("\n");
-                    for (String s : segmentedPart)
+                    for (int i = 0; i < segmentedPart.length; i++)
                     {
-                        if(!s.isEmpty())
+                        if (!s.isEmpty())
                         {
                             pair.getFont().draw(batch, s, curX, curY);
                         }
-                        curX = x;
-                        curY += pair.getFont().getData().down;
+                        if (i + 1 < segmentedPart.length)
+                        {
+                            curX = x;
+                            curY += pair.getFont().getData().down;
+                        }
                     }
                 }
                 // Draw fragments using the correct font at the correct position, one after another.
